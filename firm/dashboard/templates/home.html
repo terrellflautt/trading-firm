@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}Home — Trading Firm{% endblock %}
+{% block content %}
+
+<h1>Today's Firm</h1>
+
+<div class="row" style="justify-content: space-between; margin-bottom: 1rem;">
+  <p class="muted">
+    {% if scan and scan.contexts %}
+      {{ scan.contexts | length }} ticker(s) analyzed
+      {% if state.last_scan_at %}as of {{ state.last_scan_at.strftime('%H:%M:%S') }}{% endif %}
+    {% else %}
+      No scan yet — waiting for first tick.
+    {% endif %}
+  </p>
+  <form method="post" action="/refresh" hx-post="/refresh" hx-swap="none">
+    <button type="submit" class="secondary">↻ Run scan now</button>
+  </form>
+</div>
+
+<h2>Accounts</h2>
+<div class="grid grid-2">
+  {% for key, snap in snapshots.items() %}
+  <div class="card">
+    <h3>{{ snap.config.display_name }}</h3>
+    <div class="row" style="justify-content: space-between; align-items: baseline;">
+      <span class="big">${{ "{:,.0f}".format(snap.config.buying_power) }}</span>
+      <span class="muted">buying power</span>
+    </div>
+    <table style="margin-top: 0.5rem; background: transparent; border: none;">
+      <tr><td class="dim">Free cash</td><td class="num">${{ "{:,.0f}".format(snap.free_cash) }}</td></tr>
+      <tr><td class="dim">Committed</td><td class="num">${{ "{:,.0f}".format(snap.committed_capital) }}</td></tr>
+      <tr><td class="dim">Premium (LTD)</td><td class="num pos">${{ "{:,.2f}".format(snap.total_premium_collected) }}</td></tr>
+      <tr><td class="dim">Max share price</td><td class="num">${{ "{:.0f}".format(snap.config.max_share_price) }}</td></tr>
+    </table>
+  </div>
+  {% endfor %}
+</div>
+
+<h2>Today's Recommendations</h2>
+{% if scan and scan.recommendations %}
+  <table>
+    <thead>
+      <tr>
+        <th>#</th><th>Account</th><th>Ticket</th><th class="num">Conv</th>
+        <th class="num">Credit/Debit</th><th>Rationale</th><th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in scan.recommendations %}
+      <tr>
+        <td class="dim">{{ loop.index }}</td>
+        <td class="mono">{{ r.account_key }}</td>
+        <td><a href="/ticker/{{ r.symbol }}" class="ticket">{{ r.order_ticket() }}</a></td>
+        <td class="num">
+          <span class="conviction-bar"><span style="width: {{ (r.conviction*100)|round }}%"></span></span>
+          {{ "%.2f"|format(r.conviction) }}
+        </td>
+        <td class="num {% if r.expected_credit_or_debit >= 0 %}pos{% else %}neg{% endif %}">
+          {{ "%+,.0f"|format(r.expected_credit_or_debit) }}
+        </td>
+        <td>
+          <div class="rationale">{{ r.rationale[:240] }}{% if r.rationale|length > 240 %}…{% endif %}</div>
+          {% if r.risk_notes %}
+            <div class="rationale"><span class="tag warn">!</span>{{ r.risk_notes | join("; ") }}</div>
+          {% endif %}
+        </td>
+        <td>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('{{ r.order_ticket() }}'); this.textContent='✓'">
+            Copy
+          </button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <p class="muted">No actionable recommendations right now. The scan may still be in progress, or
+    the Risk Manager filtered everything (check below).</p>
+{% endif %}
+
+{% if scan and scan.rejected %}
+  <h2>Filtered Out <span class="muted" style="font-size: 0.8rem;">({{ scan.rejected|length }})</span></h2>
+  <table>
+    <thead><tr><th>Ticket</th><th>Reason</th></tr></thead>
+    <tbody>
+      {% for r, why in scan.rejected %}
+      <tr>
+        <td class="ticket">{{ r.order_ticket() }}</td>
+        <td class="dim">{{ why }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endif %}
+
+<h2>Watchlist Brief</h2>
+{% if scan and scan.contexts %}
+  <table>
+    <thead>
+      <tr>
+        <th>Ticker</th><th>Sector</th><th class="num">Price</th><th class="num">Day Δ</th>
+        <th class="num">IV Rank</th><th>Trend</th><th>Signals</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for sym, ctx in scan.contexts.items() | sort %}
+      <tr>
+        <td><a href="/ticker/{{ sym }}">{{ sym }}</a></td>
+        <td class="dim">{{ ctx.sector }}</td>
+        <td class="num">${{ "%.2f"|format(ctx.quote.price) }}</td>
+        <td class="num {% if ctx.quote.day_change_pct > 0 %}pos{% elif ctx.quote.day_change_pct < 0 %}neg{% endif %}">
+          {{ "%+.2f"|format(ctx.quote.day_change_pct) }}%
+        </td>
+        <td class="num">
+          {% if ctx.indicators.get('volatility', {}).get('iv_rank') is not none %}
+            {{ "%.0f"|format(ctx.indicators['volatility']['iv_rank']) }}
+          {% else %}—{% endif %}
+        </td>
+        <td class="dim mono">
+          {% set tech = ctx.indicators.get('technical') %}
+          {% if tech %}{{ tech.trend.direction }}({{ "%.2f"|format(tech.trend.strength) }}){% else %}—{% endif %}
+        </td>
+        <td>
+          {% for s in scan.signals_by_symbol.get(sym, []) %}
+            {% set short = s.agent.split('_')[0] %}
+            {% set d = s.direction.value %}
+            <span class="tag {% if 'bull' in d %}bull{% elif 'bear' in d %}bear{% endif %}">
+              {{ short }}: {{ d }}
+            </span>
+          {% endfor %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endif %}
+
+{% endblock %}

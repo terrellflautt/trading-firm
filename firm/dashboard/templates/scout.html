@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Scout — Trading Firm{% endblock %}
+{% block content %}
+
+<div class="row" style="justify-content: space-between;">
+  <h1>Scout</h1>
+  <form method="post" action="/scout/refresh">
+    <button type="submit" class="secondary">↻ Re-run Scout</button>
+  </form>
+</div>
+
+<p class="muted">Tickers found outside your watchlist with wheel-friendly setups —
+  high IV rank, decent liquidity, account-fit at current prices.
+  {% if state.last_scout_at %}Last update: {{ state.last_scout_at.strftime('%Y-%m-%d %H:%M') }}.{% endif %}
+</p>
+
+{% if finds %}
+  <table>
+    <thead>
+      <tr>
+        <th>Symbol</th><th class="num">Score</th><th>Source</th>
+        <th class="num">Price</th><th class="num">IV Rank</th>
+        <th>Fits</th><th>Sector</th><th>Why</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for f in finds %}
+      <tr>
+        <td><a href="/ticker/{{ f.symbol }}">{{ f.symbol }}</a></td>
+        <td class="num">{{ "%.2f"|format(f.score) }}</td>
+        <td class="dim">{{ f.source }}</td>
+        <td class="num">${{ "%.2f"|format(f.price) }}</td>
+        <td class="num">{% if f.iv_rank is not none %}{{ "%.0f"|format(f.iv_rank) }}{% else %}—{% endif %}</td>
+        <td>{% for a in f.fits_account %}<span class="tag">{{ a }}</span>{% endfor %}</td>
+        <td class="dim">{{ f.sector_guess }}</td>
+        <td><div class="rationale">{{ f.rationale }}</div></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <p class="muted">No Scout finds yet. Run the scout from this page or wait for the next cadence.</p>
+{% endif %}
+
+{% endblock %}

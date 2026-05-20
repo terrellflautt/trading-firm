@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} — Trading Firm{% endblock %}
+{% block content %}
+
+<div class="row" style="justify-content: space-between; align-items: baseline;">
+  <h1>{{ title }}</h1>
+  <a href="/reports" class="muted">← All reports</a>
+</div>
+
+<div class="markdown-body">{{ html | safe }}</div>
+
+{% endblock %}

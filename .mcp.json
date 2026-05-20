@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "trading-firm": {
+      "command": "uv",
+      "args": ["run", "--directory", ".", "firm", "mcp"],
+      "env": {}
+    }
+  }
+}

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Reports — Trading Firm{% endblock %}
+{% block content %}
+
+<h1>Reports</h1>
+
+<div class="grid grid-2">
+  <div class="card">
+    <h3>Daily Firm Reports</h3>
+    <form method="post" action="/reports/daily/generate" style="margin-bottom: 0.75rem;">
+      <button type="submit" class="secondary">📄 Generate today's daily report</button>
+    </form>
+    {% if daily %}
+      {% for p in daily %}
+        <a class="report-link" href="/reports/view?path={{ p.name }}">{{ p.name }}</a>
+      {% endfor %}
+    {% else %}
+      <p class="muted">No daily reports yet.</p>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h3>Per-Ticker Quarterly Reports</h3>
+    <form method="post" action="/reports/ticker/generate" style="margin-bottom: 0.75rem;">
+      <div class="row">
+        <input name="symbol" placeholder="SYMBOL" required style="text-transform: uppercase;">
+        <button type="submit" class="secondary">Generate</button>
+      </div>
+    </form>
+    {% if quarterly %}
+      {% for p in quarterly %}
+        <a class="report-link" href="/reports/view?path=quarterly/{{ p.name }}">{{ p.name }}</a>
+      {% endfor %}
+    {% else %}
+      <p class="muted">No quarterly reports yet.</p>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

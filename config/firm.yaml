@@ -1,0 +1,70 @@
+# Global firm configuration
+firm:
+  name: "Wheel House Trading Firm"
+  timezone: "America/New_York"
+
+llm:
+  # Default: Sonnet 4.6 for everything. Good quality, sensible cost.
+  # Estimated cost: ~$1.70/scan × 5 scans/day ≈ $190/month.
+  # Cheaper alternatives:
+  #   - claude-haiku-4-5-20251001 — ~5x cheaper, faster, lighter reasoning. ~$40/month.
+  #   - Use `firm scan` manually instead of `firm start` — only pay for scans you trigger.
+  # Pricier alternative:
+  #   - claude-opus-4-7 — ~5x more expensive, best nuance for fundamental/sentiment. ~$925/month at 5 scans/day.
+  analyst_model: "claude-sonnet-4-6"
+  portfolio_model: "claude-sonnet-4-6"
+  max_tokens: 4096
+  temperature: 0.3
+  enable_prompt_caching: true
+
+scan:
+  # All times are wall-clock in `schedule_timezone` (IANA name; zoneinfo handles DST).
+  # Use America/Chicago for CST/CDT. Edit any of these to tune your schedule.
+  schedule_timezone: "America/Chicago"
+  schedule:
+    - "03:00"   # pre-market — futures + overnight news digested
+    - "08:30"   # market open
+    - "10:30"   # post morning volatility
+    - "13:00"   # afternoon
+    - "14:30"   # power hour / last-hour momentum
+  scout_schedule:
+    - "07:30"   # one Scout pass per day, before market open
+  daily_report_at: "15:00"   # market close — writes today's EOD report
+  # Catch-up policy: if daemon starts after a scheduled time has already passed
+  # today, run an immediate "catch-up" scan once instead of waiting until tomorrow.
+  catch_up_on_start: true
+
+dashboard:
+  host: "127.0.0.1"
+  port: 8088
+  open_browser_on_start: true
+
+data:
+  cache_db: "data_store/cache.sqlite"
+  ledger_db: "data_store/ledger.sqlite"
+  yfinance_quote_ttl_seconds: 300         # 5 min
+  yfinance_history_ttl_seconds: 900       # 15 min
+  yfinance_options_ttl_seconds: 900       # 15 min
+  yfinance_fundamentals_ttl_seconds: 86400  # 1 day
+  barchart_ttl_seconds: 1800              # 30 min
+
+risk:
+  default_max_position_pct: 25      # No single ticker > 25% of account
+  assignment_risk_dte: 7            # Flag short options within 7 DTE
+  assignment_risk_delta: 0.40       # ...or delta above 0.40
+  target_csp_delta: 0.25            # Sweet spot for CSP strike selection
+  target_cc_delta: 0.25             # Sweet spot for CC strike selection
+  min_iv_rank_for_csp: 30           # Only sell CSPs when IV rank > 30
+  min_premium_pct_annualized: 15    # Require ≥15% annualized return on premium
+
+# Quant agent — Markov regime classifier (Bull / Sideways / Bear).
+# Deterministic, local, no LLM. See firm/strategy/regime.py.
+regime:
+  window: 20              # Rolling-return lookback in trading days
+  threshold: 0.05         # ±return cutoff for Bull/Bear (0.05 = ±5%)
+  history_period: "3y"    # yfinance period for the close-price fetch
+  min_train_days: 252     # Min labeled days before walk-forward backtest runs
+
+logging:
+  level: "INFO"
+  file: "data_store/firm.log"

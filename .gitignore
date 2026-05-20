@@ -1,0 +1,20 @@
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+.env
+.env.local
+data_store/
+reports/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+dist/
+build/
+.DS_Store
+
+# User-personalised configs written by `firm init` / init_portfolio.
+# Tracked .example files show the schema; real ones contain capital amounts.
+config/accounts.yaml
+config/watchlist.yaml

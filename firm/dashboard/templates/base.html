@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Trading Firm{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
+  <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
+  <script src="https://unpkg.com/htmx.org@1.9.12/dist/ext/sse.js" defer></script>
+</head>
+<body hx-ext="sse" sse-connect="/events" sse-swap="scan_state">
+  <header>
+    <nav>
+      <a href="/" class="brand">📈 Trading Firm</a>
+      <ul>
+        <li><a href="/">Home</a></li>
+        <li><a href="/accounts">Accounts</a></li>
+        <li><a href="/scout">Scout</a></li>
+        <li><a href="/tools">Tools</a></li>
+        <li><a href="/reports">Reports</a></li>
+      </ul>
+      <span class="status-pill" id="scan-pill" hx-swap-oob="true">
+        {% if state and state.is_scanning %}<span class="dot live"></span> scanning…
+        {% elif state and state.last_scan_at %}<span class="dot ok"></span> last scan {{ state.last_scan_at.strftime('%H:%M:%S') }}
+        {% else %}<span class="dot idle"></span> idle
+        {% endif %}
+      </span>
+    </nav>
+  </header>
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+  <footer>
+    <small>localhost firm — recommendations only, no broker execution</small>
+  </footer>
+</body>
+</html>

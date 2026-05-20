@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% block title %}{{ symbol }} — Trading Firm{% endblock %}
+{% block content %}
+
+<div class="row" style="justify-content: space-between; align-items: baseline;">
+  <h1>{{ symbol }}
+    {% if ctx %}<span class="muted" style="font-size: 1rem; font-weight: 400;">({{ ctx.sector }})</span>{% endif %}
+  </h1>
+  <form method="post" action="/reports/ticker/generate">
+    <input type="hidden" name="symbol" value="{{ symbol }}">
+    <button type="submit" class="secondary">Generate quarterly report</button>
+  </form>
+</div>
+
+{% if not ctx %}
+  <p class="muted">No scan data yet for {{ symbol }}. Run a watchlist scan from the home page first.</p>
+{% else %}
+
+<div class="grid grid-4">
+  <div class="card">
+    <h3>Price</h3>
+    <div class="big">${{ "%.2f"|format(ctx.quote.price) }}</div>
+    <div class="{% if ctx.quote.day_change_pct > 0 %}pos{% elif ctx.quote.day_change_pct < 0 %}neg{% endif %}">
+      {{ "%+.2f"|format(ctx.quote.day_change_pct) }}% today
+    </div>
+    <div class="muted mono" style="margin-top: 0.5rem;">Vol: {{ "{:,}".format(ctx.quote.volume) }}</div>
+  </div>
+  <div class="card">
+    <h3>IV Rank</h3>
+    <div class="big">
+      {% set ivr = ctx.indicators.get('volatility', {}).get('iv_rank') %}
+      {% if ivr is not none %}{{ "%.0f"|format(ivr) }}{% else %}—{% endif %}
+    </div>
+    <div class="muted">
+      {% set atm = ctx.indicators.get('volatility', {}).get('atm_iv') %}
+      {% if atm %}ATM IV {{ "%.0f%%"|format(atm*100) }}{% endif %}
+    </div>
+  </div>
+  <div class="card">
+    <h3>Trend</h3>
+    {% set tech = ctx.indicators.get('technical') %}
+    {% if tech %}
+      <div class="big">{{ tech.trend.direction }}</div>
+      <div class="muted">strength {{ "%.2f"|format(tech.trend.strength) }}</div>
+    {% else %}<div class="muted">—</div>{% endif %}
+  </div>
+  <div class="card">
+    <h3>Indicators</h3>
+    {% if tech %}<div class="mono" style="font-size: 0.78rem; line-height: 1.7;">{{ tech.to_summary() }}</div>
+    {% else %}<div class="muted">—</div>{% endif %}
+  </div>
+</div>
+
+<h2>Recommendations</h2>
+{% if recommendations %}
+  <table>
+    <thead><tr><th>Account</th><th>Ticket</th><th class="num">Conv</th><th>Rationale</th><th></th></tr></thead>
+    <tbody>
+      {% for r in recommendations %}
+      <tr>
+        <td class="mono">{{ r.account_key }}</td>
+        <td class="ticket">{{ r.order_ticket() }}</td>
+        <td class="num">{{ "%.2f"|format(r.conviction) }}</td>
+        <td><div class="rationale">{{ r.rationale }}</div></td>
+        <td><button class="copy-btn" onclick="navigator.clipboard.writeText('{{ r.order_ticket() }}'); this.textContent='✓'">Copy</button></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <p class="muted">No recommendations for {{ symbol }} in the latest scan.</p>
+{% endif %}
+
+{% if rejected %}
+<h2>Filtered Out <span class="muted" style="font-size: 0.85rem;">({{ rejected|length }})</span></h2>
+<table>
+  <thead><tr><th>Ticket</th><th>Reason</th></tr></thead>
+  <tbody>
+    {% for r, why in rejected %}<tr><td class="ticket">{{ r.order_ticket() }}</td><td class="dim">{{ why }}</td></tr>{% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+<h2>Wheel State per Account</h2>
+<div class="grid grid-2">
+  {% for key, acct in per_account.items() %}
+  <div class="card">
+    <h3>{{ acct.config.display_name }}</h3>
+    <div class="row" style="justify-content: space-between;">
+      <span class="tag mono">{{ acct.wheel_state.value }}</span>
+      <span class="muted">premiums: ${{ "%.2f"|format(acct.premiums) }}</span>
+    </div>
+    {% if acct.shares %}
+      <table style="margin-top: 0.5rem; background: transparent; border: none;">
+        <tr><td class="dim">Shares</td><td class="num">{{ acct.shares.shares }}</td></tr>
+        <tr><td class="dim">Avg cost</td><td class="num">${{ "%.2f"|format(acct.shares.average_cost) }}</td></tr>
+        <tr><td class="dim">Eff basis</td><td class="num">${{ "%.2f"|format(acct.shares.effective_cost_basis) }}</td></tr>
+      </table>
+    {% endif %}
+    {% if acct.options %}
+      <table style="margin-top: 0.5rem;">
+        <thead><tr><th>Side</th><th>Type</th><th class="num">Strike</th><th>Exp</th><th class="num">Contracts</th></tr></thead>
+        <tbody>
+          {% for o in acct.options %}
+          <tr>
+            <td class="mono">{{ o.side.value }}</td>
+            <td class="mono">{{ o.type.value }}</td>
+            <td class="num">${{ "%.2f"|format(o.strike) }}</td>
+            <td class="mono">{{ o.expiry }}</td>
+            <td class="num">{{ o.contracts }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% endif %}
+    {% if not acct.shares and not acct.options %}
+      <p class="muted">No position in this account.</p>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+
+<h2>Analyst Signals</h2>
+{% for s in signals %}
+  <div class="card" style="margin-bottom: 0.5rem;">
+    <div class="row" style="justify-content: space-between; align-items: baseline;">
+      <strong>{{ s.agent }}</strong>
+      <div>
+        <span class="tag {% if 'bull' in s.direction.value %}bull{% elif 'bear' in s.direction.value %}bear{% endif %}">{{ s.direction.value }}</span>
+        <span class="muted mono">conv {{ "%.2f"|format(s.conviction) }}</span>
+      </div>
+    </div>
+    <div class="rationale">{{ s.rationale }}</div>
+  </div>
+{% endfor %}
+
+{% if ctx.options_chain %}
+<h2>Options Chain (front 3 expiries)</h2>
+{% for exp in ctx.options_chain.expiries[:3] %}
+  <h3 style="margin-top: 1rem;">Expiry {{ exp }}</h3>
+  <table>
+    <thead><tr><th class="num">Strike</th><th class="num">P bid</th><th class="num">P ask</th><th class="num">P IV</th><th class="num">P OI</th><th class="num">C bid</th><th class="num">C ask</th><th class="num">C IV</th><th class="num">C OI</th></tr></thead>
+    <tbody>
+      {% set spot = ctx.options_chain.spot_price %}
+      {% set strikes = ctx.options_chain.puts(exp) | map(attribute='strike') | list %}
+      {% for strike in strikes[:14] %}
+        {% set p = (ctx.options_chain.puts(exp) | selectattr('strike', 'equalto', strike) | first) %}
+        {% set c = (ctx.options_chain.calls(exp) | selectattr('strike', 'equalto', strike) | first) %}
+        <tr>
+          <td class="num {% if strike < spot %}dim{% else %}{% endif %}">${{ "%.2f"|format(strike) }}</td>
+          <td class="num">{% if p %}${{ "%.2f"|format(p.bid) }}{% endif %}</td>
+          <td class="num">{% if p %}${{ "%.2f"|format(p.ask) }}{% endif %}</td>
+          <td class="num">{% if p %}{{ "%.0f%%"|format(p.implied_volatility*100) }}{% endif %}</td>
+          <td class="num">{% if p %}{{ p.open_interest }}{% endif %}</td>
+          <td class="num">{% if c %}${{ "%.2f"|format(c.bid) }}{% endif %}</td>
+          <td class="num">{% if c %}${{ "%.2f"|format(c.ask) }}{% endif %}</td>
+          <td class="num">{% if c %}{{ "%.0f%%"|format(c.implied_volatility*100) }}{% endif %}</td>
+          <td class="num">{% if c %}{{ c.open_interest }}{% endif %}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endfor %}
+{% endif %}
+
+{% endif %}
+
+{% endblock %}

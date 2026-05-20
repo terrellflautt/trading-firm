@@ -1,0 +1,18 @@
+<h4 style="margin-top: 1rem;">{{ symbol }} chain {{ expiry }} — spot ${{ "%.2f"|format(spot) }}</h4>
+<table>
+  <thead><tr><th>Type</th><th class="num">Strike</th><th class="num">Bid</th><th class="num">Ask</th><th class="num">Last</th><th class="num">Vol</th><th class="num">OI</th><th class="num">IV</th></tr></thead>
+  <tbody>
+    {% for c in chain.contracts %}
+    <tr>
+      <td class="mono">{{ c.type.value }}</td>
+      <td class="num">${{ "%.2f"|format(c.strike) }}</td>
+      <td class="num">${{ "%.2f"|format(c.bid) }}</td>
+      <td class="num">${{ "%.2f"|format(c.ask) }}</td>
+      <td class="num">${{ "%.2f"|format(c.last) }}</td>
+      <td class="num">{{ c.volume }}</td>
+      <td class="num">{{ c.open_interest }}</td>
+      <td class="num">{{ "%.0f%%"|format(c.implied_volatility*100) }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>

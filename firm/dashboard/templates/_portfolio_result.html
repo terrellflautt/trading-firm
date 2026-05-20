@@ -1,0 +1,8 @@
+<div style="margin-top: 1rem;">
+  <p class="success">Imported {{ n_shares }} share position(s) and {{ n_opts }} option position(s) into <strong>{{ account }}</strong>.</p>
+  {% if errors %}
+  <p class="error">Skipped lines:</p>
+  <ul>{% for e in errors %}<li class="muted mono">{{ e }}</li>{% endfor %}</ul>
+  {% endif %}
+  <p><a href="/accounts">View accounts →</a></p>
+</div>

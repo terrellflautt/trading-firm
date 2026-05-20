@@ -1,0 +1,50 @@
+HOW TO GET STARTED
+==================
+
+Prerequisites you must have installed:
+  1. Claude Code (any plan that includes Claude Code — Pro, Max, Team)
+  2. uv (Astral's Python package manager):
+       pip install uv
+     ...or:
+       curl -LsSf https://astral.sh/uv/install.sh | sh
+  3. Python 3.12+ (uv can install this for you automatically)
+
+That's it. There's NO "uv sync" or "firm init" step at the shell.
+
+Setup (the entire flow):
+  1. Unzip this folder somewhere on your machine.
+  2. Open a terminal in this folder.
+  3. Run:    claude
+  4. When Claude Code asks to approve the MCP server, say YES.
+  5. Claude will detect it's a fresh setup and ask you 4 quick questions:
+       - cash brokerage capital (USD)
+       - margin enabled on cash account? (y/n)
+       - do you have a Roth IRA? if yes, how much capital?
+       - which tickers? (or just accept the starter list)
+  6. Done — you're trading.
+
+Then talk to Claude like an analyst at your desk:
+  "plan today"
+  "deep dive on NVDA"
+  "scout for new opportunities"
+  "validate sell 1 AAPL 180 put 2026-06-19 for $1.80 on cash"
+  "I just bought 100 INTC at $25.50 in cash"
+  "what's the regime on QQQ"
+
+Likely friction points to watch for:
+  - Claude Code will prompt you to approve the MCP server on first launch
+    — you need to say yes.
+  - "uv: command not found" is the most common error. Verify with:
+        uv --version
+    before running claude. Install uv if it's missing (see above).
+  - yfinance occasionally rate-limits. Transient, retry in a few minutes.
+  - Cross-platform: developed on WSL/Linux. macOS is fine. Native Windows
+    (not WSL) works in principle but is less tested — if you have WSL,
+    prefer it.
+  - Your data lives in data_store/ (SQLite, gitignored). If someone sends
+    you a fresh zip later, DO NOT overwrite data_store/ — you'll lose
+    your ledger of past trades and premium income.
+
+If you ever want to redo setup from scratch:
+  - In Claude Code: ask it to "re-init the portfolio with force=true"
+  - Or at the shell: uv run firm init --force

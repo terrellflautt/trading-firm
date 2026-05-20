@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Tools — Trading Firm{% endblock %}
+{% block content %}
+
+<h1>Tools</h1>
+
+<div class="grid grid-2">
+
+  <div class="card">
+    <h3>Paste Options Chain</h3>
+    <p class="muted" style="font-size: 0.85rem;">Confirm what the firm sees with fresher data from your broker. Paste a CSV chain — supports Yahoo / Schwab / Fidelity formats.</p>
+    <form method="post" action="/tools/paste-chain" hx-post="/tools/paste-chain" hx-target="#chain-result" hx-swap="innerHTML">
+      <div class="row">
+        <input name="symbol" placeholder="Symbol (e.g. IONQ)" value="{{ chain_symbol or '' }}" required style="text-transform: uppercase;">
+        <input type="date" name="expiry" value="{{ chain_expiry or '' }}" required>
+        <input type="number" name="spot" placeholder="Spot price" value="{{ chain_spot or '' }}" required step="0.01" min="0.01">
+      </div>
+      <textarea name="text" placeholder="Paste chain text here — headers like Strike,Bid,Ask,Last,Volume,OI,IV…" required>{{ chain_text or '' }}</textarea>
+      <button type="submit">Parse</button>
+    </form>
+    {% if chain_error %}<p class="error">Parse error: {{ chain_error }}</p>{% endif %}
+    <div id="chain-result"></div>
+  </div>
+
+  <div class="card">
+    <h3>Paste Portfolio</h3>
+    <p class="muted" style="font-size: 0.85rem;">Bulk-import positions. One per line. Format:</p>
+    <pre style="background: var(--bg); padding: 0.5rem; border-radius: 4px; font-size: 0.78rem;">SHARES: SYMBOL SHARES AVG_COST
+OPTION: SYMBOL put|call STRIKE YYYY-MM-DD CONTRACTS PREMIUM [side=short|long]</pre>
+    <form method="post" action="/tools/paste-portfolio" hx-post="/tools/paste-portfolio" hx-target="#portfolio-result" hx-swap="innerHTML">
+      <select name="account" required>
+        {% for key, c in state.cfg.accounts.accounts.items() %}
+          <option value="{{ key }}">{{ c.display_name }}</option>
+        {% endfor %}
+      </select>
+      <textarea name="text" placeholder="SHARES: INTC 100 25.00
+OPTION: INTC put 24 2026-06-18 1 0.80 side=short"></textarea>
+      <button type="submit">Import</button>
+    </form>
+    <div id="portfolio-result"></div>
+  </div>
+
+</div>
+
+{% endblock %}

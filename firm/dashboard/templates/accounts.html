@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}Accounts — Trading Firm{% endblock %}
+{% block content %}
+
+<h1>Accounts</h1>
+
+<div class="grid grid-2">
+  {% for key, snap in snapshots.items() %}
+  <div class="card">
+    <div class="row" style="justify-content: space-between; align-items: baseline;">
+      <h3>{{ snap.config.display_name }}</h3>
+      <span class="muted mono">{{ key }}</span>
+    </div>
+    <table style="background: transparent; border: none;">
+      <tr><td class="dim">Capital</td><td class="num">${{ "{:,.2f}".format(snap.config.capital) }}</td></tr>
+      <tr><td class="dim">Margin</td><td class="num">{% if snap.config.margin_enabled %}{{ snap.config.margin_multiplier }}x{% else %}none{% endif %}</td></tr>
+      <tr><td class="dim">Buying power</td><td class="num">${{ "{:,.2f}".format(snap.config.buying_power) }}</td></tr>
+      <tr><td class="dim">Free cash</td><td class="num">${{ "{:,.2f}".format(snap.free_cash) }}</td></tr>
+      <tr><td class="dim">Committed</td><td class="num">${{ "{:,.2f}".format(snap.committed_capital) }}</td></tr>
+      <tr><td class="dim">Premium (LTD)</td><td class="num pos">${{ "{:,.2f}".format(snap.total_premium_collected) }}</td></tr>
+      <tr><td class="dim">Max share price</td><td class="num">${{ "{:.0f}".format(snap.config.max_share_price) }}</td></tr>
+    </table>
+
+    {% if snap.shares_positions %}
+    <h3 style="margin-top: 1rem;">Shares</h3>
+    <table>
+      <thead><tr><th>Symbol</th><th class="num">Shares</th><th class="num">Avg cost</th><th class="num">Eff basis</th><th class="num">Premium</th><th></th></tr></thead>
+      <tbody>
+        {% for p in snap.shares_positions %}
+        <tr>
+          <td><a href="/ticker/{{ p.symbol }}">{{ p.symbol }}</a></td>
+          <td class="num">{{ p.shares }}</td>
+          <td class="num">${{ "%.2f"|format(p.average_cost) }}</td>
+          <td class="num">${{ "%.2f"|format(p.effective_cost_basis) }}</td>
+          <td class="num pos">${{ "%.2f"|format(p.premiums_collected) }}</td>
+          <td>
+            <form method="post" action="/positions/shares/remove" style="display:inline;">
+              <input type="hidden" name="account" value="{{ key }}">
+              <input type="hidden" name="symbol" value="{{ p.symbol }}">
+              <button type="submit" class="copy-btn">Remove</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+
+    {% if snap.open_options %}
+    <h3 style="margin-top: 1rem;">Open Options</h3>
+    <table>
+      <thead><tr><th>Symbol</th><th>Side</th><th>Type</th><th class="num">Strike</th><th>Exp</th><th class="num">Qty</th><th class="num">Entry</th><th></th></tr></thead>
+      <tbody>
+        {% for o in snap.open_options %}
+        <tr>
+          <td><a href="/ticker/{{ o.symbol }}">{{ o.symbol }}</a></td>
+          <td class="mono">{{ o.side.value }}</td>
+          <td class="mono">{{ o.type.value }}</td>
+          <td class="num">${{ "%.2f"|format(o.strike) }}</td>
+          <td class="mono">{{ o.expiry }}</td>
+          <td class="num">{{ o.contracts }}</td>
+          <td class="num">${{ "%.2f"|format(o.entry_price) }}</td>
+          <td>
+            {# Need the row id — fetch from ledger context #}
+            <span class="muted" style="font-size: 0.75rem;">use CLI to close</span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+
+    {% if not snap.shares_positions and not snap.open_options %}
+      <p class="muted">No positions.</p>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+
+<h2>Add Position</h2>
+
+<div class="grid grid-2">
+  <div class="card">
+    <h3>Add Shares</h3>
+    <form method="post" action="/positions/shares">
+      <div class="row" style="gap: 0.5rem;">
+        <select name="account" required>
+          {% for key, snap in snapshots.items() %}
+            <option value="{{ key }}">{{ snap.config.display_name }}</option>
+          {% endfor %}
+        </select>
+        <input name="symbol" placeholder="SYMBOL" required style="text-transform: uppercase;">
+      </div>
+      <div class="row" style="gap: 0.5rem;">
+        <input type="number" name="shares" placeholder="Shares (multiples of 100)" required step="100" min="100">
+        <input type="number" name="price" placeholder="Avg cost / share" required step="0.01" min="0.01">
+      </div>
+      <button type="submit">Add shares</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h3>Add Option Position</h3>
+    <form method="post" action="/positions/option">
+      <div class="row" style="gap: 0.5rem;">
+        <select name="account" required>
+          {% for key, snap in snapshots.items() %}
+            <option value="{{ key }}">{{ snap.config.display_name }}</option>
+          {% endfor %}
+        </select>
+        <input name="symbol" placeholder="SYMBOL" required style="text-transform: uppercase;">
+      </div>
+      <div class="row" style="gap: 0.5rem;">
+        <select name="type" required>
+          <option value="put">Put</option><option value="call">Call</option>
+        </select>
+        <select name="side" required>
+          <option value="short">Short (sell)</option><option value="long">Long (buy)</option>
+        </select>
+        <input type="number" name="contracts" value="1" min="1" required>
+      </div>
+      <div class="row" style="gap: 0.5rem;">
+        <input type="number" name="strike" placeholder="Strike" required step="0.01" min="0.01">
+        <input type="date" name="expiry" required>
+        <input type="number" name="premium" placeholder="Premium / share" required step="0.01" min="0.01">
+      </div>
+      <button type="submit">Add option</button>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
