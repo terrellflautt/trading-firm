@@ -8,12 +8,16 @@ Prerequisites you must have installed:
      ...or:
        curl -LsSf https://astral.sh/uv/install.sh | sh
   3. Python 3.12+ (uv can install this for you automatically)
+  4. git (only needed if you clone instead of unzipping)
 
 That's it. There's NO "uv sync" or "firm init" step at the shell.
 
 Setup (the entire flow):
-  1. Unzip this folder somewhere on your machine.
-  2. Open a terminal in this folder.
+  1. Get the code, either way:
+       git clone https://github.com/terrellflautt/trading-firm.git
+       cd trading-firm
+     OR unzip the project zip and `cd` into the folder.
+  2. Open a terminal in that folder.
   3. Run:    claude
   4. When Claude Code asks to approve the MCP server, say YES.
   5. Claude will detect it's a fresh setup and ask you 4 quick questions:

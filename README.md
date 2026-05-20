@@ -13,14 +13,15 @@ a free local data + ledger + analytics tool.
 ## Quick start
 
 ```bash
-# Open Claude Code in this folder. That's it.
-cd trading-firm-fresh-start-for-new-user
+git clone https://github.com/terrellflautt/trading-firm.git
+cd trading-firm
 claude
 ```
 
-On first launch Claude Code will auto-discover the firm's MCP server, then
-walk you through 4 setup questions in chat (capital, margin, IRA, tickers)
-and write your config files. You're trading in under a minute.
+That's it. On first launch Claude Code will auto-discover the firm's MCP
+server, then walk you through 4 setup questions in chat (capital, margin,
+IRA, tickers) and write your config files. You're trading in under a
+minute.
 
 Once setup is done, talk to it like a desk analyst:
 
