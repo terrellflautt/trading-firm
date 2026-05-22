@@ -376,17 +376,22 @@ def build_server(cfg: Config | None = None):
     # ─── Scout ──────────────────────────────────────────────────────────
 
     @server.tool()
-    def scout_now(top_n: int = 5) -> str:
+    async def scout_now(top_n: int = 5) -> str:
         """Run the Scout: find new tickers outside the watchlist worth investigating.
 
         Uses Finviz sector screens + earnings movers + unusual options activity.
         Returns ranked candidates with score, IV rank, sector, account fit.
 
+        On-demand only — the firm runs no scheduled scans; this fires solely when
+        you call it. Declared `async` because the MCP server already runs inside
+        an asyncio event loop: a sync `asyncio.run()` here would raise
+        "cannot be called from a running event loop". We await the coroutine
+        directly instead.
+
         Args:
             top_n: How many candidates to return (default 5).
         """
         if cfg is None: return _UNINITIALIZED_ERROR
-        import asyncio
         from .data.cache import Cache
         from .data.finviz import FinvizScreener
         from .data.yfinance_client import YFClient
@@ -396,7 +401,7 @@ def build_server(cfg: Config | None = None):
         yf = YFClient(cache, cfg.firm.data)
         finviz = FinvizScreener(cache)
         scout = Scout(cfg, yf, finviz, ledger)
-        finds = asyncio.run(scout.discover(top_n=top_n))
+        finds = await scout.discover(top_n=top_n)
         return json.dumps([
             {
                 "symbol": f.symbol, "score": f.score, "source": f.source,

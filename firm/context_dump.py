@@ -248,7 +248,7 @@ def ticker_context_markdown(ctx: dict[str, Any]) -> str:
         runway = f.get("cash_runway_quarters")
         if runway is not None:
             lines.append(f"- Cash runway: **{runway:.1f} quarters**")
-        elif f.get("operating_cash_flow_ttm", 0) >= 0:
+        elif (f.get("operating_cash_flow_ttm") or 0) >= 0:
             lines.append("- Cash-flow positive (runway not a concern)")
     # Wheel state per account
     lines.append("\n## Wheel State per Account\n")
